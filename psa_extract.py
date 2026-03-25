@@ -15,7 +15,7 @@ BASE_URL = "https://uwrg.psarcweb.com/PSAWeb"
 USERNAME = "jasonuwrgs"
 PASSWORD = "j1fF5q2J"
 SCHEMA = 1022
-UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
 # Disable SSL verification
 ssl_ctx = ssl.create_default_context()
