@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.pyo
+jobs_cache.json
+priority_overrides.json
+*.log

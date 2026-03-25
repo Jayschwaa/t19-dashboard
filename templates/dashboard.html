@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T-19 Job Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+
+  header { background: #1a1d2e; border-bottom: 1px solid #2d3748; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 1.3rem; font-weight: 700; color: #fff; }
+  header .meta { font-size: 0.8rem; color: #718096; }
+
+  .controls { padding: 12px 24px; background: #141620; border-bottom: 1px solid #2d3748; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .controls input, .controls select { background: #1a1d2e; border: 1px solid #2d3748; color: #e2e8f0; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; }
+  .controls input { width: 220px; }
+  .btn { background: #3182ce; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+  .btn:hover { background: #2b6cb0; }
+  .btn.secondary { background: #2d3748; }
+  .btn.secondary:hover { background: #4a5568; }
+  .stats-bar { display: flex; gap: 20px; padding: 10px 24px; background: #141620; border-bottom: 1px solid #2d3748; flex-wrap: wrap; }
+  .stat { font-size: 0.8rem; color: #718096; }
+  .stat span { color: #e2e8f0; font-weight: 700; }
+
+  .job-list { padding: 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+
+  .job-card { background: #1a1d2e; border: 1px solid #2d3748; border-radius: 10px; overflow: hidden; transition: border-color 0.15s; }
+  .job-card:hover { border-color: #4a5568; }
+  .job-card.high-priority { border-left: 4px solid #e53e3e; }
+  .job-card.med-priority  { border-left: 4px solid #ed8936; }
+  .job-card.low-priority  { border-left: 4px solid #48bb78; }
+
+  .job-header { display: flex; align-items: flex-start; padding: 12px 16px; gap: 12px; cursor: pointer; }
+  .rank { font-size: 1.1rem; font-weight: 800; color: #718096; min-width: 30px; }
+  .score-badge { background: #2d3748; border-radius: 6px; padding: 4px 8px; font-size: 0.75rem; font-weight: 700; min-width: 50px; text-align: center; }
+  .score-badge.high { background: #742a2a; color: #fc8181; }
+  .score-badge.med  { background: #7b341e; color: #fbd38d; }
+  .score-badge.low  { background: #1c4532; color: #9ae6b4; }
+
+  .job-main { flex: 1; }
+  .job-title { font-weight: 700; font-size: 0.95rem; color: #fff; }
+  .job-sub { font-size: 0.8rem; color: #718096; margin-top: 2px; }
+  .contact-row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px; }
+  .contact-item { font-size: 0.8rem; color: #63b3ed; }
+  .contact-item a { color: #63b3ed; text-decoration: none; }
+  .contact-item a:hover { text-decoration: underline; }
+  .job-meta { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+  .tag { font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+  .tag.wtr { background: #1a365d; color: #63b3ed; }
+  .tag.mld { background: #1c4532; color: #9ae6b4; }
+  .tag.str { background: #44337a; color: #d6bcfa; }
+  .tag.con { background: #744210; color: #fefcbf; }
+  .tag.days { background: #2d3748; color: #a0aec0; }
+  .tag.rev  { background: #1a365d; color: #63b3ed; }
+  .tag.stuck { background: #742a2a; color: #fc8181; }
+
+  .flags-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .flag { font-size: 0.7rem; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+  .flag.iicrc  { background: #322659; color: #b794f4; }
+  .flag.ticket { background: #744210; color: #fefcbf; }
+  .flag.upsell { background: #1c4532; color: #68d391; }
+
+  .job-expand { padding: 0 16px 14px 16px; display: none; border-top: 1px solid #2d3748; }
+  .job-expand.open { display: block; }
+
+  .expand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+  @media (max-width: 600px) { .expand-grid { grid-template-columns: 1fr; } }
+
+  .expand-section h4 { font-size: 0.78rem; font-weight: 700; color: #a0aec0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .expand-section ul { list-style: none; }
+  .expand-section li { font-size: 0.8rem; color: #fc8181; margin-bottom: 3px; }
+  .expand-section li.ok { color: #68d391; }
+  .expand-section li.note { color: #a0aec0; }
+
+  .notes-list { margin-top: 4px; }
+  .note-item { font-size: 0.78rem; color: #a0aec0; border-left: 2px solid #2d3748; padding-left: 8px; margin-bottom: 6px; }
+  .note-item .note-meta { font-size: 0.7rem; color: #4a5568; margin-bottom: 2px; }
+
+  .comment-area { margin-top: 12px; }
+  .comment-area textarea { width: 100%; background: #0f1117; border: 1px solid #2d3748; color: #e2e8f0; padding: 8px; border-radius: 6px; font-size: 0.82rem; resize: vertical; min-height: 60px; }
+  .comment-actions { display: flex; gap: 8px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
+  .bump-label { font-size: 0.78rem; color: #718096; }
+
+  .score-breakdown { background: #0f1117; border-radius: 6px; padding: 10px 12px; margin-top: 12px; }
+  .score-breakdown h4 { font-size: 0.78rem; font-weight: 700; color: #a0aec0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .score-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 0.78rem; }
+  .score-row .label { color: #718096; width: 120px; flex-shrink: 0; }
+  .score-row .bar-wrap { flex: 1; background: #2d3748; border-radius: 3px; height: 6px; }
+  .score-row .bar-fill { height: 6px; border-radius: 3px; background: #3182ce; }
+  .score-row .pts { color: #e2e8f0; font-weight: 700; width: 40px; text-align: right; flex-shrink: 0; }
+  .score-row .det { color: #4a5568; font-size: 0.72rem; width: 160px; flex-shrink: 0; }
+  .error { text-align: center; padding: 40px; color: #fc8181; }
+
+  .chevron { transition: transform 0.2s; display: inline-block; margin-left: auto; color: #4a5568; }
+  .chevron.open { transform: rotate(180deg); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏗️ T-19 Job Dashboard</h1>
+  <div style="display:flex;gap:16px;align-items:center">
+    <span style="font-size:0.75rem;background:#1c4532;color:#68d391;padding:3px 10px;border-radius:12px;font-weight:600">Pre-Invoice Only</span>
+    <div class="meta" id="last-refresh">Loading...</div>
+  </div>
+</header>
+
+<div class="controls">
+  <input type="text" id="search" placeholder="Search client, job #, tech..." oninput="renderJobs()">
+  <select id="type-filter" onchange="renderJobs()">
+    <option value="">All Types</option>
+    <option value="WTR">WTR</option>
+    <option value="MLD">MLD</option>
+    <option value="STR">STR</option>
+    <option value="CON">CON</option>
+  </select>
+  <select id="flag-filter" onchange="renderJobs()">
+    <option value="">All Jobs</option>
+    <option value="iicrc">Has IICRC Gaps</option>
+    <option value="ticket">Has Ticket Gaps</option>
+    <option value="upsell">Has Upsell Ops</option>
+    <option value="stuck">Stuck 7+ days</option>
+  </select>
+  <button class="btn secondary" onclick="refreshData()">🔄 Refresh</button>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<div class="job-list" id="job-list">
+  <div class="loading">Loading jobs from PSA... this may take a minute on first load.</div>
+</div>
+
+<script>
+let allJobs = [];
+let expanded = {};
+
+async function loadJobs() {
+  document.getElementById('job-list').innerHTML = '<div class="loading">⏳ Loading jobs from PSA… first load takes 2-3 min while we pull and enrich all T-19 jobs.<br><br><small style="color:#4a5568">This page will auto-update when ready.</small></div>';
+  
+  const poll = async () => {
+    try {
+      const r = await fetch('/api/jobs');
+      if (r.status === 500) {
+        const d = await r.json().catch(()=>({error:'Unknown error'}));
+        // If still loading (fetch in progress), keep polling
+        if (d.error && d.error.includes('locked')) {
+          setTimeout(poll, 5000);
+          return;
+        }
+        document.getElementById('job-list').innerHTML = `<div class="error">Error: ${d.error||'Unknown'}</div>`;
+        return;
+      }
+      allJobs = await r.json();
+      document.getElementById('last-refresh').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+      renderJobs();
+    } catch(e) {
+      // Network timeout — keep polling
+      setTimeout(poll, 5000);
+    }
+  };
+  poll();
+}
+
+async function refreshData() {
+  document.getElementById('job-list').innerHTML = '<div class="loading">Refreshing from PSA...</div>';
+  await fetch('/api/refresh', {method:'POST'});
+  await loadJobs();
+}
+
+function renderJobs() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const typeF  = document.getElementById('type-filter').value;
+  const flagF  = document.getElementById('flag-filter').value;
+
+  let jobs = allJobs.filter(j => {
+    if (search && !`${j.job_number} ${j.client_name} ${j.assigned_to}`.toLowerCase().includes(search)) return false;
+    if (typeF && j.job_type !== typeF) return false;
+    if (flagF === 'iicrc'  && !j.iicrc_flags.length)   return false;
+    if (flagF === 'ticket' && !j.ticket_flags.length)   return false;
+    if (flagF === 'upsell' && !j.upsell_flags.length)   return false;
+    if (flagF === 'stuck'  && j.last_activity_days < 7) return false;
+    return true;
+  });
+
+  // Stats
+  const totalRev = jobs.reduce((s,j)=>s+j.revenue,0);
+  const iicrcCount = jobs.filter(j=>j.iicrc_flags.length).length;
+  const upsellCount = jobs.filter(j=>j.upsell_flags.length).length;
+  document.getElementById('stats-bar').innerHTML = `
+    <div class="stat">Jobs: <span>${jobs.length}</span></div>
+    <div class="stat">Pipeline: <span>$${totalRev.toLocaleString('en-US',{maximumFractionDigits:0})}</span></div>
+    <div class="stat">IICRC Gaps: <span>${iicrcCount}</span></div>
+    <div class="stat">Upsell Ops: <span>${upsellCount}</span></div>
+    <div class="stat">Stuck 7+ days: <span>${jobs.filter(j=>j.last_activity_days>=7).length}</span></div>
+  `;
+
+  const list = document.getElementById('job-list');
+  if (!jobs.length) { list.innerHTML = '<div class="loading">No jobs match filters.</div>'; return; }
+
+  list.innerHTML = jobs.map((j, i) => buildCard(j, i+1)).join('');
+}
+
+function priorityClass(score) {
+  if (score >= 150) return 'high-priority';
+  if (score >= 80)  return 'med-priority';
+  return 'low-priority';
+}
+function scoreClass(score) {
+  if (score >= 150) return 'high';
+  if (score >= 80)  return 'med';
+  return 'low';
+}
+function typeTag(t) {
+  const cls = {WTR:'wtr',MLD:'mld',STR:'str',CON:'con'}[t] || 'days';
+  return `<span class="tag ${cls}">${t}</span>`;
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function buildCard(j, rank) {
+  const pc = priorityClass(j.priority_score);
+  const sc = scoreClass(j.priority_score);
+  const isOpen = expanded[j.job_id];
+  const stuckTag = j.last_activity_days >= 7 ? `<span class="tag stuck">Stuck ${j.last_activity_days}d</span>` : '';
+
+  const iicrcFlags = j.iicrc_flags.map(f=>`<span class="flag iicrc">📋 ${esc(f)}</span>`).join('');
+  const ticketFlags = j.ticket_flags.map(f=>`<span class="flag ticket">📄 ${esc(f)}</span>`).join('');
+  const upsellFlags = j.upsell_flags.map(f=>`<span class="flag upsell">💰 ${esc(f)}</span>`).join('');
+
+  // Contact info
+  const phones = (j.phones||[]).map(p=>`<span class="contact-item">📞 <a href="tel:${esc(p)}">${esc(p)}</a></span>`).join('');
+  const emails = (j.emails||[]).map(e=>`<span class="contact-item">✉️ <a href="mailto:${esc(e)}">${esc(e)}</a></span>`).join('');
+  const addrHtml = j.address ? `<span class="contact-item">📍 ${esc(j.address)}</span>` : '';
+
+  const notes = (j.recent_notes||[]).map(n=>
+    `<div class="note-item"><div class="note-meta">${esc(n.date)} — ${esc(n.by)}</div>${esc(n.text).substring(0,200)}${n.text.length>200?'…':''}</div>`
+  ).join('');
+
+  const override = j.override_note ? `<div class="note-item"><div class="note-meta">📌 Owner note</div>${esc(j.override_note)}</div>` : '';
+
+  // Score breakdown
+  const bd = j.score_breakdown || {};
+  const maxScore = 300;
+  const breakdownLabels = {
+    age:    {label: 'Days Open',    color: '#e53e3e'},
+    revenue:{label: 'Revenue',      color: '#3182ce'},
+    stuck:  {label: 'Inactivity',   color: '#ed8936'},
+    iicrc:  {label: 'IICRC Gaps',   color: '#805ad5'},
+    ticket: {label: 'Ticket Gaps',  color: '#d69e2e'},
+    upsell: {label: 'Upsell Ops',   color: '#38a169'},
+    manual: {label: 'Owner Adj.',   color: '#718096'},
+  };
+  const breakdownHtml = Object.entries(bd).map(([k, v]) => {
+    const cfg = breakdownLabels[k] || {label: k, color: '#718096'};
+    const pct = Math.min(Math.abs(v.pts) / maxScore * 100, 100);
+    return `<div class="score-row">
+      <span class="label">${cfg.label}</span>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${cfg.color}"></div></div>
+      <span class="pts">+${v.pts}</span>
+      <span class="det">${esc(v.detail)}</span>
+    </div>`;
+  }).join('');
+
+  return `
+<div class="job-card ${pc}" id="card-${j.job_id}">
+  <div class="job-header" onclick="toggle('${j.job_id}')">
+    <div class="rank">#${rank}</div>
+    <div class="score-badge ${sc}">${j.priority_score}</div>
+    <div class="job-main">
+      <div class="job-title">${esc(j.client_name)} <span style="color:#718096;font-weight:400;font-size:0.85rem">${esc(j.job_number)}</span></div>
+      <div class="job-sub">${esc(j.assigned_to)}${j.alt_status ? ' · '+esc(j.alt_status) : ''}${j.contact_name ? ' · '+esc(j.contact_name) : ''}</div>
+      <div class="contact-row">${phones}${emails}${addrHtml}</div>
+      <div class="job-meta">
+        ${typeTag(j.job_type)}
+        <span class="tag days">📅 ${j.days_open}d open</span>
+        ${j.revenue > 0 ? `<span class="tag rev">💵 $${j.revenue.toLocaleString('en-US',{maximumFractionDigits:0})}</span>` : ''}
+        ${stuckTag}
+      </div>
+      <div class="flags-row">${iicrcFlags}${ticketFlags}${upsellFlags}</div>
+    </div>
+    <span class="chevron ${isOpen?'open':''}">▾</span>
+  </div>
+  <div class="job-expand ${isOpen?'open':''}" id="expand-${j.job_id}">
+    <div class="expand-grid">
+      <div class="expand-section">
+        <h4>📋 IICRC Compliance</h4>
+        <ul>
+          ${j.iicrc_flags.length
+            ? j.iicrc_flags.map(f=>`<li>✗ ${esc(f)}</li>`).join('')
+            : '<li class="ok">✓ No gaps detected</li>'}
+        </ul>
+      </div>
+      <div class="expand-section">
+        <h4>📄 Ticket Completeness</h4>
+        <ul>
+          ${j.ticket_flags.length
+            ? j.ticket_flags.map(f=>`<li>✗ ${esc(f)}</li>`).join('')
+            : '<li class="ok">✓ Ticket looks complete</li>'}
+        </ul>
+      </div>
+      <div class="expand-section">
+        <h4>💰 Upsell Opportunities</h4>
+        <ul>
+          ${j.upsell_flags.length
+            ? j.upsell_flags.map(f=>`<li>✗ ${esc(f)}</li>`).join('')
+            : '<li class="ok">✓ No missed upsells</li>'}
+        </ul>
+      </div>
+      <div class="expand-section">
+        <h4>📝 Recent Activity</h4>
+        <div class="notes-list">${override}${notes || '<span style="color:#4a5568;font-size:0.8rem">No recent notes</span>'}</div>
+      </div>
+    </div>
+
+    <div class="score-breakdown">
+      <h4>🎯 Why This Score? (Total: ${j.priority_score})</h4>
+      ${breakdownHtml || '<span style="color:#4a5568;font-size:0.8rem">No breakdown available</span>'}
+    </div>
+
+    <div class="comment-area">
+      <h4 style="font-size:0.78rem;font-weight:700;color:#a0aec0;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Add Note / Reprioritize</h4>
+      <textarea id="comment-${j.job_id}" placeholder="Add a note — will post to PSA..."></textarea>
+      <div class="comment-actions">
+        <button class="btn" onclick="submitComment('${j.job_id}', 0)">Post Note to PSA</button>
+        <span class="bump-label">Boost priority:</span>
+        <button class="btn secondary" onclick="submitComment('${j.job_id}', 50)">↑ Bump Up</button>
+        <button class="btn secondary" onclick="submitComment('${j.job_id}', -50)">↓ Bump Down</button>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+function toggle(jobId) {
+  expanded[jobId] = !expanded[jobId];
+  const card = document.getElementById(`expand-${jobId}`);
+  const chevron = document.querySelector(`#card-${jobId} .chevron`);
+  if (card)    card.classList.toggle('open', expanded[jobId]);
+  if (chevron) chevron.classList.toggle('open', expanded[jobId]);
+}
+
+async function submitComment(jobId, bump) {
+  const ta = document.getElementById(`comment-${jobId}`);
+  const comment = ta ? ta.value.trim() : '';
+  if (!comment && bump === 0) return;
+
+  try {
+    const r = await fetch(`/api/comment/${jobId}`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({comment, bump})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      if (ta) ta.value = '';
+      alert(bump !== 0 ? 'Priority updated!' : 'Note posted to PSA!');
+      await loadJobs();
+    } else {
+      alert('Error: ' + (d.error || 'Unknown'));
+    }
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+loadJobs();
+</script>
+</body>
+</html>
