@@ -3,369 +3,496 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>T-19 Job Dashboard</title>
+<title>T-19 Operations Center</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #020617; color: #e2e8f0; min-height: 100vh; }
 
-  header { background: #1a1d2e; border-bottom: 1px solid #2d3748; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
-  header h1 { font-size: 1.3rem; font-weight: 700; color: #fff; }
-  header .meta { font-size: 0.8rem; color: #718096; }
+nav { background: #0f172a; border-bottom: 1px solid #1e293b; padding: 0 20px; display: flex; align-items: center; height: 52px; position: sticky; top: 0; z-index: 100; gap: 16px; }
+.nav-brand { font-size: 1rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; white-space: nowrap; }
+.nav-brand span { color: #3b82f6; }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.cache-info { font-size: 0.72rem; color: #475569; white-space: nowrap; }
+.btn-sm { background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 600; transition: background 0.12s; }
+.btn-sm:hover { background: #334155; color: #e2e8f0; }
 
-  .controls { padding: 12px 24px; background: #141620; border-bottom: 1px solid #2d3748; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-  .controls input, .controls select { background: #1a1d2e; border: 1px solid #2d3748; color: #e2e8f0; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; }
-  .controls input { width: 220px; }
-  .btn { background: #3182ce; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
-  .btn:hover { background: #2b6cb0; }
-  .btn.secondary { background: #2d3748; }
-  .btn.secondary:hover { background: #4a5568; }
-  .stats-bar { display: flex; gap: 20px; padding: 10px 24px; background: #141620; border-bottom: 1px solid #2d3748; flex-wrap: wrap; }
-  .stat { font-size: 0.8rem; color: #718096; }
-  .stat span { color: #e2e8f0; font-weight: 700; }
+.page { max-width: 1100px; margin: 0 auto; padding: 20px 14px; }
 
-  .job-list { padding: 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+.kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+@media(max-width:640px) { .kpi-strip { grid-template-columns: repeat(2,1fr); } }
+.kpi { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 14px 16px; }
+.kpi-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #475569; margin-bottom: 4px; }
+.kpi-val { font-size: 1.6rem; font-weight: 800; color: #fff; line-height: 1.1; }
+.kpi-sub { font-size: 0.72rem; color: #475569; margin-top: 3px; }
+.kpi.blue .kpi-val { color: #3b82f6; }
+.kpi.green .kpi-val { color: #22c55e; }
+.kpi.red .kpi-val { color: #ef4444; }
+.kpi.amber .kpi-val { color: #f97316; }
 
-  .job-card { background: #1a1d2e; border: 1px solid #2d3748; border-radius: 10px; overflow: hidden; transition: border-color 0.15s; }
-  .job-card:hover { border-color: #4a5568; }
-  .job-card.high-priority { border-left: 4px solid #e53e3e; }
-  .job-card.med-priority  { border-left: 4px solid #ed8936; }
-  .job-card.low-priority  { border-left: 4px solid #48bb78; }
+.ctrl-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.ctrl-bar input, .ctrl-bar select { background: #0f172a; border: 1px solid #1e293b; color: #e2e8f0; padding: 7px 11px; border-radius: 7px; font-size: 0.82rem; outline: none; }
+.ctrl-bar input:focus, .ctrl-bar select:focus { border-color: #3b82f6; }
+.ctrl-bar input { flex: 1; min-width: 180px; }
+.count-lbl { font-size: 0.75rem; color: #475569; margin-left: auto; white-space: nowrap; }
 
-  .job-header { display: flex; align-items: flex-start; padding: 12px 16px; gap: 12px; cursor: pointer; }
-  .rank { font-size: 1.1rem; font-weight: 800; color: #718096; min-width: 30px; }
-  .score-badge { background: #2d3748; border-radius: 6px; padding: 4px 8px; font-size: 0.75rem; font-weight: 700; min-width: 50px; text-align: center; }
-  .score-badge.high { background: #742a2a; color: #fc8181; }
-  .score-badge.med  { background: #7b341e; color: #fbd38d; }
-  .score-badge.low  { background: #1c4532; color: #9ae6b4; }
+.section-hd { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #475569; margin-bottom: 10px; }
 
-  .job-main { flex: 1; }
-  .job-title { font-weight: 700; font-size: 0.95rem; color: #fff; }
-  .job-sub { font-size: 0.8rem; color: #718096; margin-top: 2px; }
-  .contact-row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px; }
-  .contact-item { font-size: 0.8rem; color: #63b3ed; }
-  .contact-item a { color: #63b3ed; text-decoration: none; }
-  .contact-item a:hover { text-decoration: underline; }
-  .job-meta { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
-  .tag { font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
-  .tag.wtr { background: #1a365d; color: #63b3ed; }
-  .tag.mld { background: #1c4532; color: #9ae6b4; }
-  .tag.str { background: #44337a; color: #d6bcfa; }
-  .tag.con { background: #744210; color: #fefcbf; }
-  .tag.days { background: #2d3748; color: #a0aec0; }
-  .tag.rev  { background: #1a365d; color: #63b3ed; }
-  .tag.stuck { background: #742a2a; color: #fc8181; }
+.job-list { display: flex; flex-direction: column; gap: 7px; }
 
-  .flags-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-  .flag { font-size: 0.7rem; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
-  .flag.iicrc  { background: #322659; color: #b794f4; }
-  .flag.ticket { background: #744210; color: #fefcbf; }
-  .flag.upsell { background: #1c4532; color: #68d391; }
+.jcard { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; overflow: hidden; transition: border-color 0.12s; }
+.jcard:hover { border-color: #334155; }
+.jcard.lvl-crit { border-left: 3px solid #ef4444; }
+.jcard.lvl-high { border-left: 3px solid #f97316; }
+.jcard.lvl-med  { border-left: 3px solid #eab308; }
+.jcard.lvl-low  { border-left: 3px solid #22c55e; }
 
-  .job-expand { padding: 0 16px 14px 16px; display: none; border-top: 1px solid #2d3748; }
-  .job-expand.open { display: block; }
+.jhead { display: flex; align-items: flex-start; padding: 12px 14px; gap: 10px; cursor: pointer; user-select: none; }
+.jrank { font-size: 0.95rem; font-weight: 800; color: #334155; min-width: 26px; padding-top: 3px; flex-shrink: 0; }
 
-  .expand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
-  @media (max-width: 600px) { .expand-grid { grid-template-columns: 1fr; } }
+.spill { border-radius: 6px; padding: 3px 8px; font-size: 0.7rem; font-weight: 800; min-width: 52px; text-align: center; flex-shrink: 0; }
+.spill.lvl-crit { background: #450a0a; color: #fca5a5; }
+.spill.lvl-high { background: #431407; color: #fdba74; }
+.spill.lvl-med  { background: #422006; color: #fde68a; }
+.spill.lvl-low  { background: #052e16; color: #86efac; }
 
-  .expand-section h4 { font-size: 0.78rem; font-weight: 700; color: #a0aec0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
-  .expand-section ul { list-style: none; }
-  .expand-section li { font-size: 0.8rem; color: #fc8181; margin-bottom: 3px; }
-  .expand-section li.ok { color: #68d391; }
-  .expand-section li.note { color: #a0aec0; }
+.jmain { flex: 1; min-width: 0; }
+.jname { font-weight: 700; font-size: 0.92rem; color: #fff; }
+.jnum  { color: #3b82f6; font-size: 0.78rem; }
+.jmeta { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 5px; align-items: center; }
+.badge { font-size: 0.66rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+.badge.wtr  { background: #1e3a5f; color: #60a5fa; }
+.badge.mld  { background: #2d1b4e; color: #a78bfa; }
+.badge.fir  { background: #451a03; color: #fb923c; }
+.badge.cnt, .badge.cntnt, .badge.contents { background: #1a2e1a; color: #4ade80; }
+.badge.recon{ background: #1a1a3e; color: #818cf8; }
+.badge.duct { background: #1e2a1e; color: #6ee7b7; }
+.badge.str  { background: #3b1a1a; color: #f87171; }
+.badge.status-badge { background: #1e293b; color: #64748b; }
+.meta-dim { font-size: 0.74rem; color: #475569; }
 
-  .notes-list { margin-top: 4px; }
-  .note-item { font-size: 0.78rem; color: #a0aec0; border-left: 2px solid #2d3748; padding-left: 8px; margin-bottom: 6px; }
-  .note-item .note-meta { font-size: 0.7rem; color: #4a5568; margin-bottom: 2px; }
+.jright { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+.jrev { font-size: 0.92rem; font-weight: 700; color: #22c55e; }
+.jrev.none { color: #334155; font-size: 0.78rem; }
+.flags { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.flag { font-size: 0.6rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; }
+.flag.fi { background: #1c1917; color: #ca8a04; border: 1px solid #92400e; }
+.flag.ft { background: #1a1f2e; color: #818cf8; border: 1px solid #4338ca; }
+.flag.fu { background: #052e16; color: #4ade80; border: 1px solid #166534; }
+.flag.fb { background: #0c1a3a; color: #60a5fa; border: 1px solid #1d4ed8; }
 
-  .comment-area { margin-top: 12px; }
-  .comment-area textarea { width: 100%; background: #0f1117; border: 1px solid #2d3748; color: #e2e8f0; padding: 8px; border-radius: 6px; font-size: 0.82rem; resize: vertical; min-height: 60px; }
-  .comment-actions { display: flex; gap: 8px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
-  .bump-label { font-size: 0.78rem; color: #718096; }
+.jbody { display: none; border-top: 1px solid #1e293b; padding: 14px; }
+.jbody.open { display: block; }
 
-  .score-breakdown { background: #0f1117; border-radius: 6px; padding: 10px 12px; margin-top: 12px; }
-  .score-breakdown h4 { font-size: 0.78rem; font-weight: 700; color: #a0aec0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-  .score-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 0.78rem; }
-  .score-row .label { color: #718096; width: 120px; flex-shrink: 0; }
-  .score-row .bar-wrap { flex: 1; background: #2d3748; border-radius: 3px; height: 6px; }
-  .score-row .bar-fill { height: 6px; border-radius: 3px; background: #3182ce; }
-  .score-row .pts { color: #e2e8f0; font-weight: 700; width: 40px; text-align: right; flex-shrink: 0; }
-  .score-row .det { color: #4a5568; font-size: 0.72rem; width: 160px; flex-shrink: 0; }
-  .error { text-align: center; padding: 40px; color: #fc8181; }
+.score-section h5 { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #475569; margin-bottom: 8px; }
+.sbars { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.srow { display: flex; align-items: center; gap: 8px; }
+.srow label { font-size: 0.72rem; color: #94a3b8; width: 110px; flex-shrink: 0; }
+.track { flex: 1; background: #1e293b; border-radius: 3px; height: 5px; overflow: hidden; }
+.fill { height: 100%; border-radius: 3px; }
+.fill.age   { background: #8b5cf6; }
+.fill.rev   { background: #22c55e; }
+.fill.stuck { background: #f97316; }
+.fill.iicrc { background: #f59e0b; }
+.fill.tick  { background: #6366f1; }
+.fill.ups   { background: #10b981; }
+.fill.bump  { background: #3b82f6; }
+.srow .slbl { font-size: 0.68rem; color: #475569; width: 44px; text-align: right; flex-shrink: 0; }
 
-  .chevron { transition: transform 0.2s; display: inline-block; margin-left: auto; color: #4a5568; }
-  .chevron.open { transform: rotate(180deg); }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media(max-width:560px) { .info-grid { grid-template-columns: 1fr; } }
+.ipanel { background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 11px 13px; }
+.ipanel h5 { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #475569; margin-bottom: 8px; }
+.cklist { display: flex; flex-direction: column; gap: 4px; }
+.cki { display: flex; align-items: center; gap: 7px; font-size: 0.78rem; }
+.cki.ok  { color: #475569; }
+.cki.bad { color: #f87171; }
+.cki .ico { flex-shrink: 0; }
+.ulist { display: flex; flex-direction: column; gap: 5px; }
+.uli { display: flex; align-items: center; gap: 7px; font-size: 0.78rem; }
+.uli.on  { color: #4ade80; }
+.uli.off { color: #334155; }
+.uli .urange { font-size: 0.68rem; color: #475569; margin-left: auto; }
+.ctgrid { display: flex; flex-direction: column; gap: 4px; }
+.ctrow { font-size: 0.78rem; color: #94a3b8; }
+.ctrow a { color: #3b82f6; text-decoration: none; }
+.ctrow a:hover { text-decoration: underline; }
+.ctlbl { color: #475569; font-size: 0.7rem; margin-right: 4px; }
+
+.act-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: flex-start; }
+.cmt-box { flex: 1; min-width: 180px; }
+.cmt-box textarea { width: 100%; background: #020617; border: 1px solid #1e293b; color: #e2e8f0; padding: 7px 10px; border-radius: 6px; font-size: 0.8rem; resize: vertical; min-height: 56px; outline: none; font-family: inherit; }
+.cmt-box textarea:focus { border-color: #3b82f6; }
+.cmt-box button { margin-top: 5px; background: #1d4ed8; color: #fff; border: none; padding: 5px 14px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 600; }
+.cmt-box button:hover { background: #2563eb; }
+.cmt-msg { font-size: 0.72rem; margin-top: 4px; }
+.bump-col { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+.bump-lbl { font-size: 0.66rem; color: #475569; text-transform: uppercase; font-weight: 700; }
+.bump-row { display: flex; gap: 6px; }
+.bbtn { background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 5px 11px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 700; }
+.bbtn:hover { background: #334155; }
+.bbtn.up   { color: #60a5fa; border-color: #1d4ed8; }
+.bbtn.down { color: #f87171; border-color: #991b1b; }
+.bump-cur { font-size: 0.68rem; color: #475569; text-align: center; }
+
+.notes-sec { margin-top: 12px; }
+.notes-sec h5 { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #475569; margin-bottom: 7px; }
+.note-item { border-left: 2px solid #1e293b; padding: 5px 9px; margin-bottom: 5px; }
+.note-dt { font-size: 0.68rem; color: #475569; margin-bottom: 2px; }
+.note-tx { font-size: 0.78rem; color: #94a3b8; line-height: 1.5; }
+
+.loading-box { text-align: center; padding: 60px 20px; color: #334155; }
+.spinner { display: inline-block; width: 26px; height: 26px; border: 3px solid #1e293b; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast { position: fixed; bottom: 20px; right: 20px; background: #0f172a; border: 1px solid #1e293b; color: #e2e8f0; padding: 9px 15px; border-radius: 8px; font-size: 0.8rem; z-index: 999; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.toast.ok  { border-color: #166534; color: #4ade80; }
+.toast.err { border-color: #991b1b; color: #f87171; }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>🏗️ T-19 Job Dashboard</h1>
-  <div style="display:flex;gap:16px;align-items:center">
-    <span style="font-size:0.75rem;background:#1c4532;color:#68d391;padding:3px 10px;border-radius:12px;font-weight:600">Pre-Invoice Only</span>
-    <div class="meta" id="last-refresh">Loading...</div>
+<nav>
+  <div class="nav-brand">T&#8209;19 <span>Ops</span></div>
+  <div class="nav-right">
+    <span class="cache-info" id="cacheInfo"></span>
+    <button class="btn-sm" onclick="loadJobs(true)">&#8635; Refresh</button>
   </div>
-</header>
+</nav>
 
-<div class="controls">
-  <input type="text" id="search" placeholder="Search client, job #, tech..." oninput="renderJobs()">
-  <select id="type-filter" onchange="renderJobs()">
-    <option value="">All Types</option>
-    <option value="WTR">WTR</option>
-    <option value="MLD">MLD</option>
-    <option value="STR">STR</option>
-    <option value="CON">CON</option>
-  </select>
-  <select id="flag-filter" onchange="renderJobs()">
-    <option value="">All Jobs</option>
-    <option value="iicrc">Has IICRC Gaps</option>
-    <option value="ticket">Has Ticket Gaps</option>
-    <option value="upsell">Has Upsell Ops</option>
-    <option value="stuck">Stuck 7+ days</option>
-  </select>
-  <button class="btn secondary" onclick="refreshData()">🔄 Refresh</button>
+<div class="page">
+  <div class="kpi-strip">
+    <div class="kpi blue"><div class="kpi-label">Open Jobs</div><div class="kpi-val" id="kpiJobs">—</div><div class="kpi-sub">pre-invoice</div></div>
+    <div class="kpi green"><div class="kpi-label">Pipeline</div><div class="kpi-val" id="kpiVal">—</div><div class="kpi-sub">total value</div></div>
+    <div class="kpi red"><div class="kpi-label">IICRC Flags</div><div class="kpi-val" id="kpiIicrc">—</div><div class="kpi-sub">jobs w/ gaps</div></div>
+    <div class="kpi amber"><div class="kpi-label">Upsell Opps</div><div class="kpi-val" id="kpiUps">—</div><div class="kpi-sub">jobs w/ opps</div></div>
+  </div>
+
+  <div class="ctrl-bar">
+    <input type="text" id="srch" placeholder="Search name, address, job #…" oninput="filter()">
+    <select id="typeFilt" onchange="filter()">
+      <option value="">All Types</option>
+      <option>WTR</option><option>MLD</option><option>FIR</option>
+      <option>RECON</option><option>DUCT</option><option>CNTS</option>
+    </select>
+    <select id="flagFilt" onchange="filter()">
+      <option value="">All Jobs</option>
+      <option value="iicrc">IICRC Gaps</option>
+      <option value="ticket">Ticket Gaps</option>
+      <option value="upsell">Upsells</option>
+    </select>
+    <span class="count-lbl" id="cntLbl"></span>
+  </div>
+
+  <div class="section-hd">Priority Board — Ranked by Score</div>
+  <div class="job-list" id="jobList">
+    <div class="loading-box"><div class="spinner"></div><br><br>Loading jobs from PSA…</div>
+  </div>
 </div>
 
-<div class="stats-bar" id="stats-bar"></div>
-
-<div class="job-list" id="job-list">
-  <div class="loading">Loading jobs from PSA... this may take a minute on first load.</div>
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
 let allJobs = [];
-let expanded = {};
 
-async function loadJobs() {
-  document.getElementById('job-list').innerHTML = '<div class="loading">⏳ Loading jobs from PSA… first load takes 2-3 min while we pull and enrich all T-19 jobs.<br><br><small style="color:#4a5568">This page will auto-update when ready.</small></div>';
-  
-  const poll = async () => {
-    try {
-      const r = await fetch('/api/jobs');
-      if (r.status === 500) {
-        const d = await r.json().catch(()=>({error:'Unknown error'}));
-        // If still loading (fetch in progress), keep polling
-        if (d.error && d.error.includes('locked')) {
-          setTimeout(poll, 5000);
-          return;
-        }
-        document.getElementById('job-list').innerHTML = `<div class="error">Error: ${d.error||'Unknown'}</div>`;
-        return;
-      }
-      allJobs = await r.json();
-      document.getElementById('last-refresh').textContent = 'Updated: ' + new Date().toLocaleTimeString();
-      renderJobs();
-    } catch(e) {
-      // Network timeout — keep polling
-      setTimeout(poll, 5000);
-    }
-  };
-  poll();
+function fmtMoney(n) {
+  if (!n || n <= 0) return null;
+  if (n >= 1000000) return '$' + (n/1e6).toFixed(1) + 'M';
+  if (n >= 1000) return '$' + (n/1000).toFixed(0) + 'K';
+  return '$' + Math.round(n).toLocaleString();
 }
 
-async function refreshData() {
-  document.getElementById('job-list').innerHTML = '<div class="loading">Refreshing from PSA...</div>';
-  await fetch('/api/refresh', {method:'POST'});
-  await loadJobs();
-}
-
-function renderJobs() {
-  const search = document.getElementById('search').value.toLowerCase();
-  const typeF  = document.getElementById('type-filter').value;
-  const flagF  = document.getElementById('flag-filter').value;
-
-  let jobs = allJobs.filter(j => {
-    if (search && !`${j.job_number} ${j.client_name} ${j.assigned_to}`.toLowerCase().includes(search)) return false;
-    if (typeF && j.job_type !== typeF) return false;
-    if (flagF === 'iicrc'  && !j.iicrc_flags.length)   return false;
-    if (flagF === 'ticket' && !j.ticket_flags.length)   return false;
-    if (flagF === 'upsell' && !j.upsell_flags.length)   return false;
-    if (flagF === 'stuck'  && j.last_activity_days < 7) return false;
-    return true;
-  });
-
-  // Stats
-  const totalRev = jobs.reduce((s,j)=>s+j.revenue,0);
-  const iicrcCount = jobs.filter(j=>j.iicrc_flags.length).length;
-  const upsellCount = jobs.filter(j=>j.upsell_flags.length).length;
-  document.getElementById('stats-bar').innerHTML = `
-    <div class="stat">Jobs: <span>${jobs.length}</span></div>
-    <div class="stat">Pipeline: <span>$${totalRev.toLocaleString('en-US',{maximumFractionDigits:0})}</span></div>
-    <div class="stat">IICRC Gaps: <span>${iicrcCount}</span></div>
-    <div class="stat">Upsell Ops: <span>${upsellCount}</span></div>
-    <div class="stat">Stuck 7+ days: <span>${jobs.filter(j=>j.last_activity_days>=7).length}</span></div>
-  `;
-
-  const list = document.getElementById('job-list');
-  if (!jobs.length) { list.innerHTML = '<div class="loading">No jobs match filters.</div>'; return; }
-
-  list.innerHTML = jobs.map((j, i) => buildCard(j, i+1)).join('');
-}
-
-function priorityClass(score) {
-  if (score >= 150) return 'high-priority';
-  if (score >= 80)  return 'med-priority';
-  return 'low-priority';
-}
-function scoreClass(score) {
-  if (score >= 150) return 'high';
-  if (score >= 80)  return 'med';
+function lvl(score) {
+  if (score >= 150) return 'crit';
+  if (score >= 100) return 'high';
+  if (score >= 60)  return 'med';
   return 'low';
 }
-function typeTag(t) {
-  const cls = {WTR:'wtr',MLD:'mld',STR:'str',CON:'con'}[t] || 'days';
-  return `<span class="tag ${cls}">${t}</span>`;
+
+function typeBadge(t) {
+  const s = (t || '').toUpperCase().replace(/[^A-Z]/g,'');
+  const map = {WTR:'wtr',MLD:'mld',FIR:'fir',RECON:'recon',DUCT:'duct',CNTS:'cnt',CNTNT:'cntnt',STR:'str',CONTENTS:'contents'};
+  return `<span class="badge ${map[s]||'status-badge'}">${s||'JOB'}</span>`;
 }
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function scoreBars(sb, score) {
+  if (!sb) return '';
+  const rows = [
+    {k:'age_score',   lbl:'Days Open',   cls:'age',   max:20},
+    {k:'revenue_score',lbl:'Revenue',    cls:'rev',   max:60},
+    {k:'stuck_score', lbl:'Inactivity',  cls:'stuck', max:60},
+    {k:'iicrc_score', lbl:'IICRC Gaps',  cls:'iicrc', max:48},
+    {k:'ticket_score',lbl:'Ticket Gaps', cls:'tick',  max:40},
+    {k:'upsell_score',lbl:'Upsells',     cls:'ups',   max:24},
+    {k:'bump_score',  lbl:'Manual Bump', cls:'bump',  max:30},
+  ];
+  let h = '<div class="score-section"><h5>Score Breakdown — ' + score + ' pts total</h5><div class="sbars">';
+  for (const r of rows) {
+    const v = sb[r.k] || 0;
+    if (v === 0 && r.k === 'bump_score') continue;
+    const pct = Math.min(100, Math.round(v / r.max * 100));
+    h += `<div class="srow"><label>${r.lbl}</label><div class="track"><div class="fill ${r.cls}" style="width:${pct}%"></div></div><span class="slbl">${v}/${r.max}</span></div>`;
+  }
+  return h + '</div></div>';
 }
 
-function buildCard(j, rank) {
-  const pc = priorityClass(j.priority_score);
-  const sc = scoreClass(j.priority_score);
-  const isOpen = expanded[j.job_id];
-  const stuckTag = j.last_activity_days >= 7 ? `<span class="tag stuck">Stuck ${j.last_activity_days}d</span>` : '';
+function iicrcPanel(gaps) {
+  const all = ['Moisture readings','Source documented','Equipment placement','Drying logs','Daily monitoring'];
+  if (!gaps || !gaps.length) return '<div class="cklist"><div class="cki ok"><span class="ico">✓</span> All checks passed</div></div>';
+  let h = '<div class="cklist">';
+  for (const item of all) {
+    const bad = gaps.includes(item);
+    h += `<div class="cki ${bad?'bad':'ok'}"><span class="ico">${bad?'✗':'✓'}</span>${item}</div>`;
+  }
+  return h + '</div>';
+}
 
-  const iicrcFlags = j.iicrc_flags.map(f=>`<span class="flag iicrc">📋 ${esc(f)}</span>`).join('');
-  const ticketFlags = j.ticket_flags.map(f=>`<span class="flag ticket">📄 ${esc(f)}</span>`).join('');
-  const upsellFlags = j.upsell_flags.map(f=>`<span class="flag upsell">💰 ${esc(f)}</span>`).join('');
+function ticketPanel(gaps) {
+  const all = ['Insurance info','Adjuster contact','Claim number','Phone number','Photos','Estimate','Scope of work'];
+  if (!gaps || !gaps.length) return '<div class="cklist"><div class="cki ok"><span class="ico">✓</span> Complete</div></div>';
+  let h = '<div class="cklist">';
+  for (const item of all) {
+    const bad = gaps.includes(item);
+    h += `<div class="cki ${bad?'bad':'ok'}"><span class="ico">${bad?'✗':'✓'}</span>${item}</div>`;
+  }
+  return h + '</div>';
+}
 
-  // Contact info
-  const phones = (j.phones||[]).map(p=>`<span class="contact-item">📞 <a href="tel:${esc(p)}">${esc(p)}</a></span>`).join('');
-  const emails = (j.emails||[]).map(e=>`<span class="contact-item">✉️ <a href="mailto:${esc(e)}">${esc(e)}</a></span>`).join('');
-  const addrHtml = j.address ? `<span class="contact-item">📍 ${esc(j.address)}</span>` : '';
+function upsellPanel(opps) {
+  const defs = [
+    {key:'content', lbl:'Contents pack-out / inventory', range:'$2,500–5,000'},
+    {key:'duct',    lbl:'AC / duct cleaning',            range:'$800–1,500'},
+    {key:'recon',   lbl:'Reconstruction estimate',       range:'$15,000+'},
+    {key:'source',  lbl:'Source repair solution',        range:'$500–2,000'},
+  ];
+  if (!opps || !opps.length) return '<div class="uli off"><span>—</span><span>No opportunities detected</span></div>';
+  let h = '<div class="ulist">';
+  for (const d of defs) {
+    const on = opps.some(o => o.toLowerCase().includes(d.key));
+    h += `<div class="uli ${on?'on':'off'}"><span>${on?'$':'—'}</span><span>${d.lbl}</span>${on?`<span class="urange">${d.range}</span>`:''}</div>`;
+  }
+  return h + '</div>';
+}
 
-  const notes = (j.recent_notes||[]).map(n=>
-    `<div class="note-item"><div class="note-meta">${esc(n.date)} — ${esc(n.by)}</div>${esc(n.text).substring(0,200)}${n.text.length>200?'…':''}</div>`
-  ).join('');
+function contactPanel(j) {
+  let h = '<div class="ctgrid">';
+  if (j.address) h += `<div class="ctrow"><span class="ctlbl">📍</span>${j.address}</div>`;
+  if (j.tech_name) h += `<div class="ctrow"><span class="ctlbl">🔧</span>${j.tech_name}</div>`;
+  if (j.bd_name)   h += `<div class="ctrow"><span class="ctlbl">🤝</span>${j.bd_name}</div>`;
+  if (j.adjuster_name) h += `<div class="ctrow"><span class="ctlbl">🏢</span>${j.adjuster_name}</div>`;
+  if (j.insurance_company) h += `<div class="ctrow"><span class="ctlbl">🛡</span>${j.insurance_company}</div>`;
+  if (j.claim_number) h += `<div class="ctrow"><span class="ctlbl">📋 Claim:</span>${j.claim_number}</div>`;
+  for (const p of (j.phones||[])) h += `<div class="ctrow"><span class="ctlbl">📞</span><a href="tel:${p}">${p}</a></div>`;
+  for (const e of (j.emails||[])) h += `<div class="ctrow"><span class="ctlbl">✉</span><a href="mailto:${e}">${e}</a></div>`;
+  return h + '</div>';
+}
 
-  const override = j.override_note ? `<div class="note-item"><div class="note-meta">📌 Owner note</div>${esc(j.override_note)}</div>` : '';
+function notesPanel(notes) {
+  if (!notes || !notes.length) return '';
+  const recent = [...notes].slice(-5).reverse();
+  let h = '<div class="notes-sec"><h5>Recent Notes</h5>';
+  for (const n of recent) {
+    const dt = n.date || '';
+    const au = n.author ? ' · ' + n.author : '';
+    const tx = n.text || String(n);
+    h += `<div class="note-item"><div class="note-dt">${dt}${au}</div><div class="note-tx">${tx}</div></div>`;
+  }
+  return h + '</div>';
+}
 
-  // Score breakdown
-  const bd = j.score_breakdown || {};
-  const maxScore = 300;
-  const breakdownLabels = {
-    age:    {label: 'Days Open',    color: '#e53e3e'},
-    revenue:{label: 'Revenue',      color: '#3182ce'},
-    stuck:  {label: 'Inactivity',   color: '#ed8936'},
-    iicrc:  {label: 'IICRC Gaps',   color: '#805ad5'},
-    ticket: {label: 'Ticket Gaps',  color: '#d69e2e'},
-    upsell: {label: 'Upsell Ops',   color: '#38a169'},
-    manual: {label: 'Owner Adj.',   color: '#718096'},
-  };
-  const breakdownHtml = Object.entries(bd).map(([k, v]) => {
-    const cfg = breakdownLabels[k] || {label: k, color: '#718096'};
-    const pct = Math.min(Math.abs(v.pts) / maxScore * 100, 100);
-    return `<div class="score-row">
-      <span class="label">${cfg.label}</span>
-      <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${cfg.color}"></div></div>
-      <span class="pts">+${v.pts}</span>
-      <span class="det">${esc(v.detail)}</span>
-    </div>`;
-  }).join('');
+function renderCard(j, rank) {
+  const l = lvl(j.score);
+  const sb = j.score_breakdown || {};
+  const iicrcGaps   = j.iicrc_gaps || [];
+  const ticketGaps  = j.ticket_gaps || [];
+  const upsells     = j.upsell_opportunities || [];
+  const bump        = j.bump_override || 0;
+  const rev         = fmtMoney(j.revenue);
 
-  return `
-<div class="job-card ${pc}" id="card-${j.job_id}">
-  <div class="job-header" onclick="toggle('${j.job_id}')">
-    <div class="rank">#${rank}</div>
-    <div class="score-badge ${sc}">${j.priority_score}</div>
-    <div class="job-main">
-      <div class="job-title">${esc(j.client_name)} <span style="color:#718096;font-weight:400;font-size:0.85rem">${esc(j.job_number)}</span></div>
-      <div class="job-sub">${esc(j.assigned_to)}${j.alt_status ? ' · '+esc(j.alt_status) : ''}${j.contact_name ? ' · '+esc(j.contact_name) : ''}</div>
-      <div class="contact-row">${phones}${emails}${addrHtml}</div>
-      <div class="job-meta">
-        ${typeTag(j.job_type)}
-        <span class="tag days">📅 ${j.days_open}d open</span>
-        ${j.revenue > 0 ? `<span class="tag rev">💵 $${j.revenue.toLocaleString('en-US',{maximumFractionDigits:0})}</span>` : ''}
-        ${stuckTag}
+  let flags = '';
+  if (iicrcGaps.length)  flags += '<span class="flag fi">IICRC</span>';
+  if (ticketGaps.length) flags += '<span class="flag ft">DOCS</span>';
+  if (upsells.length)    flags += '<span class="flag fu">UPSELL</span>';
+  if (bump !== 0)        flags += `<span class="flag fb">${bump>0?'▲':'▼'}${Math.abs(bump)}</span>`;
+
+  const dOpen = j.days_open != null ? j.days_open + 'd open' : '';
+  const dIn   = j.days_since_activity > 0 ? j.days_since_activity + 'd inactive' : '';
+
+  const curBump = bump > 0 ? '+' + bump : (bump < 0 ? String(bump) : '0');
+
+  return `<div class="jcard lvl-${l}" id="card-${j.job_id}">
+  <div class="jhead" onclick="toggle('${j.job_id}')">
+    <div class="jrank">${rank}</div>
+    <div class="spill lvl-${l}">${j.score} pts</div>
+    <div class="jmain">
+      <div class="jname"><span class="jnum">${j.job_number||j.job_id}</span>${j.customer_name ? ' — ' + j.customer_name : ''}</div>
+      <div class="jmeta">
+        ${typeBadge(j.job_type)}
+        ${j.status ? `<span class="badge status-badge">${j.status}</span>` : ''}
+        ${dOpen ? `<span class="meta-dim">${dOpen}</span>` : ''}
+        ${dIn ? `<span class="meta-dim">${dIn}</span>` : ''}
       </div>
-      <div class="flags-row">${iicrcFlags}${ticketFlags}${upsellFlags}</div>
     </div>
-    <span class="chevron ${isOpen?'open':''}">▾</span>
+    <div class="jright">
+      <div class="${rev ? 'jrev' : 'jrev none'}">${rev || 'No estimate'}</div>
+      ${flags ? `<div class="flags">${flags}</div>` : ''}
+    </div>
   </div>
-  <div class="job-expand ${isOpen?'open':''}" id="expand-${j.job_id}">
-    <div class="expand-grid">
-      <div class="expand-section">
-        <h4>📋 IICRC Compliance</h4>
-        <ul>
-          ${j.iicrc_flags.length
-            ? j.iicrc_flags.map(f=>`<li>✗ ${esc(f)}</li>`).join('')
-            : '<li class="ok">✓ No gaps detected</li>'}
-        </ul>
+  <div class="jbody" id="body-${j.job_id}">
+    ${scoreBars(sb, j.score)}
+    <div class="info-grid" style="margin-top:12px;">
+      <div class="ipanel">
+        <h5>IICRC Compliance</h5>
+        ${iicrcPanel(iicrcGaps)}
       </div>
-      <div class="expand-section">
-        <h4>📄 Ticket Completeness</h4>
-        <ul>
-          ${j.ticket_flags.length
-            ? j.ticket_flags.map(f=>`<li>✗ ${esc(f)}</li>`).join('')
-            : '<li class="ok">✓ Ticket looks complete</li>'}
-        </ul>
+      <div class="ipanel">
+        <h5>Ticket Completeness</h5>
+        ${ticketPanel(ticketGaps)}
       </div>
-      <div class="expand-section">
-        <h4>💰 Upsell Opportunities</h4>
-        <ul>
-          ${j.upsell_flags.length
-            ? j.upsell_flags.map(f=>`<li>✗ ${esc(f)}</li>`).join('')
-            : '<li class="ok">✓ No missed upsells</li>'}
-        </ul>
+      <div class="ipanel">
+        <h5>Upsell Opportunities</h5>
+        ${upsellPanel(upsells)}
       </div>
-      <div class="expand-section">
-        <h4>📝 Recent Activity</h4>
-        <div class="notes-list">${override}${notes || '<span style="color:#4a5568;font-size:0.8rem">No recent notes</span>'}</div>
+      <div class="ipanel">
+        <h5>Contacts &amp; Info</h5>
+        ${contactPanel(j)}
       </div>
     </div>
-
-    <div class="score-breakdown">
-      <h4>🎯 Why This Score? (Total: ${j.priority_score})</h4>
-      ${breakdownHtml || '<span style="color:#4a5568;font-size:0.8rem">No breakdown available</span>'}
-    </div>
-
-    <div class="comment-area">
-      <h4 style="font-size:0.78rem;font-weight:700;color:#a0aec0;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Add Note / Reprioritize</h4>
-      <textarea id="comment-${j.job_id}" placeholder="Add a note — will post to PSA..."></textarea>
-      <div class="comment-actions">
-        <button class="btn" onclick="submitComment('${j.job_id}', 0)">Post Note to PSA</button>
-        <span class="bump-label">Boost priority:</span>
-        <button class="btn secondary" onclick="submitComment('${j.job_id}', 50)">↑ Bump Up</button>
-        <button class="btn secondary" onclick="submitComment('${j.job_id}', -50)">↓ Bump Down</button>
+    ${notesPanel(j.notes)}
+    <div class="act-row">
+      <div class="cmt-box">
+        <textarea id="cmt-${j.job_id}" placeholder="Add a note to PSA…"></textarea>
+        <button onclick="postNote('${j.job_id}')">Post Note</button>
+        <div class="cmt-msg" id="cmt-msg-${j.job_id}"></div>
+      </div>
+      <div class="bump-col">
+        <div class="bump-lbl">Priority Bump</div>
+        <div class="bump-row">
+          <button class="bbtn up"   onclick="bump('${j.job_id}',1)">▲</button>
+          <button class="bbtn down" onclick="bump('${j.job_id}',-1)">▼</button>
+        </div>
+        <div class="bump-cur" id="bump-cur-${j.job_id}">Override: ${curBump}</div>
       </div>
     </div>
   </div>
 </div>`;
 }
 
-function toggle(jobId) {
-  expanded[jobId] = !expanded[jobId];
-  const card = document.getElementById(`expand-${jobId}`);
-  const chevron = document.querySelector(`#card-${jobId} .chevron`);
-  if (card)    card.classList.toggle('open', expanded[jobId]);
-  if (chevron) chevron.classList.toggle('open', expanded[jobId]);
+function toggle(id) {
+  const el = document.getElementById('body-' + id);
+  el.classList.toggle('open');
 }
 
-async function submitComment(jobId, bump) {
-  const ta = document.getElementById(`comment-${jobId}`);
-  const comment = ta ? ta.value.trim() : '';
-  if (!comment && bump === 0) return;
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type||'');
+  setTimeout(() => t.className = 'toast', 2800);
+}
 
+async function postNote(jobId) {
+  const ta = document.getElementById('cmt-' + jobId);
+  const msg = document.getElementById('cmt-msg-' + jobId);
+  const text = ta.value.trim();
+  if (!text) return;
+  msg.textContent = 'Posting…';
+  msg.style.color = '#64748b';
   try {
-    const r = await fetch(`/api/comment/${jobId}`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({comment, bump})
-    });
+    const r = await fetch('/note/' + jobId, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({note:text})});
     const d = await r.json();
     if (d.ok) {
-      if (ta) ta.value = '';
-      alert(bump !== 0 ? 'Priority updated!' : 'Note posted to PSA!');
-      await loadJobs();
+      msg.textContent = '✓ Posted';
+      msg.style.color = '#4ade80';
+      ta.value = '';
+      toast('Note posted to PSA', 'ok');
     } else {
-      alert('Error: ' + (d.error || 'Unknown'));
+      msg.textContent = d.error || 'Failed';
+      msg.style.color = '#f87171';
     }
   } catch(e) {
-    alert('Error: ' + e.message);
+    msg.textContent = 'Error';
+    msg.style.color = '#f87171';
   }
 }
 
-loadJobs();
+async function bump(jobId, dir) {
+  try {
+    const r = await fetch('/bump/' + jobId, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({direction: dir > 0 ? 'up' : 'down'})});
+    const d = await r.json();
+    if (d.ok) {
+      const el = document.getElementById('bump-cur-' + jobId);
+      const v = d.bump;
+      if (el) el.textContent = 'Override: ' + (v > 0 ? '+' : '') + v;
+      toast('Priority ' + (dir > 0 ? 'bumped up' : 'bumped down'), 'ok');
+      // update in allJobs
+      const job = allJobs.find(j => j.job_id == jobId);
+      if (job) job.bump_override = v;
+    }
+  } catch(e) {
+    toast('Failed to update bump', 'err');
+  }
+}
+
+function filter() {
+  const q    = document.getElementById('srch').value.toLowerCase();
+  const type = document.getElementById('typeFilt').value.toUpperCase();
+  const flag = document.getElementById('flagFilt').value;
+
+  let filtered = allJobs.filter(j => {
+    const matchQ = !q ||
+      (j.customer_name||'').toLowerCase().includes(q) ||
+      (j.job_number||'').toLowerCase().includes(q) ||
+      (j.address||'').toLowerCase().includes(q) ||
+      (j.tech_name||'').toLowerCase().includes(q);
+    const matchType = !type || (j.job_type||'').toUpperCase() === type;
+    const matchFlag = !flag ||
+      (flag === 'iicrc'  && (j.iicrc_gaps||[]).length > 0) ||
+      (flag === 'ticket' && (j.ticket_gaps||[]).length > 0) ||
+      (flag === 'upsell' && (j.upsell_opportunities||[]).length > 0);
+    return matchQ && matchType && matchFlag;
+  });
+
+  document.getElementById('cntLbl').textContent = filtered.length + ' of ' + allJobs.length + ' jobs';
+
+  const container = document.getElementById('jobList');
+  if (!filtered.length) {
+    container.innerHTML = '<div class="loading-box" style="color:#334155">No jobs match the current filters.</div>';
+    return;
+  }
+  container.innerHTML = filtered.map((j, i) => renderCard(j, i + 1)).join('');
+}
+
+async function loadJobs(force) {
+  const container = document.getElementById('jobList');
+  container.innerHTML = '<div class="loading-box"><div class="spinner"></div><br><br>Loading jobs from PSA…</div>';
+
+  try {
+    const url = '/jobs' + (force ? '?refresh=1' : '');
+    const r = await fetch(url);
+    const d = await r.json();
+    allJobs = d.jobs || [];
+
+    // KPIs
+    document.getElementById('kpiJobs').textContent = allJobs.length;
+    const totalVal = allJobs.reduce((s, j) => s + (j.revenue || 0), 0);
+    document.getElementById('kpiVal').textContent = fmtMoney(totalVal) || '$0';
+    document.getElementById('kpiIicrc').textContent = allJobs.filter(j => (j.iicrc_gaps||[]).length > 0).length;
+    document.getElementById('kpiUps').textContent = allJobs.filter(j => (j.upsell_opportunities||[]).length > 0).length;
+
+    // Cache info
+    const ci = document.getElementById('cacheInfo');
+    if (d.cached_at) {
+      const ago = Math.round((Date.now() - new Date(d.cached_at).getTime()) / 60000);
+      ci.textContent = ago < 1 ? 'Just refreshed' : `Cached ${ago}m ago`;
+    }
+
+    filter();
+  } catch(e) {
+    container.innerHTML = '<div class="loading-box" style="color:#f87171">Failed to load jobs. <button class="btn-sm" onclick="loadJobs(true)">Retry</button></div>';
+  }
+}
+
+loadJobs(false);
 </script>
 </body>
 </html>

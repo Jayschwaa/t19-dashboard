@@ -390,6 +390,106 @@ def index():
     return render_template('dashboard.html')
 
 
+# ── Aliases for the new frontend ──────────────────────────────────────────────
+
+@app.route('/jobs')
+def new_jobs():
+    """New frontend calls /jobs and expects {jobs:[], cached_at:''}"""
+    force = request.args.get('refresh') == '1'
+    if force:
+        # clear cache
+        if os.path.exists(CACHE_FILE):
+            try: os.remove(CACHE_FILE)
+            except: pass
+    try:
+        raw_jobs = fetch_t19_jobs()
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    overrides = load_overrides()
+    result = []
+    for job in raw_jobs:
+        jid = str(job.get('job_id', ''))
+        do = days_open(job)
+        ds = days_since_activity(job)
+        rev = job.get('revenue', 0) or 0
+        ig = iicrc_gaps(job)
+        tg = ticket_gaps(job)
+        uo = upsell_opportunities(job, [j.get('job_number','') for j in raw_jobs])
+        bov = int(overrides.get(jid, 0))
+        sb = score_breakdown(do, rev, ds, ig, tg, uo, bov)
+        total = sum(sb.values())
+        notes_raw = job.get('notes', {}).get('notes', []) or []
+        result.append({
+            'job_id':               jid,
+            'job_number':           job.get('job_number', ''),
+            'customer_name':        job.get('customer_name', ''),
+            'job_type':             job.get('job_type', ''),
+            'status':               job.get('status', ''),
+            'address':              job.get('address', ''),
+            'tech_name':            job.get('tech_name', ''),
+            'bd_name':              job.get('bd_name', ''),
+            'adjuster_name':        job.get('adjuster_name', ''),
+            'insurance_company':    job.get('insurance_company', ''),
+            'claim_number':         job.get('claim_number', ''),
+            'phones':               job.get('phones', []),
+            'emails':               job.get('emails', []),
+            'revenue':              rev,
+            'score':                total,
+            'score_breakdown':      sb,
+            'days_open':            do,
+            'days_since_activity':  ds,
+            'iicrc_gaps':           ig,
+            'ticket_gaps':          tg,
+            'upsell_opportunities': uo,
+            'bump_override':        bov,
+            'notes': [
+                {'date': n.get('created',''), 'author': n.get('employee',''), 'text': n.get('note','')}
+                for n in notes_raw[-10:]
+            ],
+        })
+
+    result.sort(key=lambda x: x['score'], reverse=True)
+
+    # get cache timestamp
+    cached_at = None
+    if os.path.exists(CACHE_FILE):
+        import datetime
+        cached_at = datetime.datetime.utcfromtimestamp(os.path.getmtime(CACHE_FILE)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    return jsonify({'jobs': result, 'cached_at': cached_at})
+
+
+@app.route('/note/<job_id>', methods=['POST'])
+def new_note(job_id):
+    """New frontend posts notes here"""
+    data = request.json or {}
+    note = data.get('note', '').strip()
+    if not note:
+        return jsonify({'ok': False, 'error': 'Empty note'}), 400
+    try:
+        client = PSAClient(PSA_BASE_URL, PSA_USERNAME, PSA_PASSWORD, PSA_SCHEMA)
+        client.login()
+        client.post_note(job_id, note)
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+@app.route('/bump/<job_id>', methods=['POST'])
+def new_bump(job_id):
+    """New frontend bumps priority here"""
+    data = request.json or {}
+    direction = data.get('direction', 'up')
+    overrides = load_overrides()
+    current = int(overrides.get(job_id, 0))
+    new_val = current + (10 if direction == 'up' else -10)
+    new_val = max(-50, min(50, new_val))
+    overrides[job_id] = new_val
+    save_overrides(overrides)
+    return jsonify({'ok': True, 'bump': new_val})
+
+
 if __name__ == '__main__':
     # Pre-warm cache in background thread so first request is fast
     def prewarm():
