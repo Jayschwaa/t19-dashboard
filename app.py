@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 OVERRIDE_FILE = '/tmp/priority_overrides.json'
 CACHE_FILE    = '/tmp/jobs_cache.json'
-CACHE_TTL     = 300  # 5 minutes
+CACHE_TTL     = 1800  # 30 minutes
 
 _lock = threading.Lock()
 
@@ -211,42 +211,41 @@ def fetch_t19_jobs():
     all_jobs = client.get_jobs('Open', page_size=100)
     t19_all = [j for j in all_jobs if j.get('territory') == '19']
 
-    # Pre-invoice filter: exclude Complete, Invoiced, Closed, Paid statuses
+    # Pre-invoice filter
     EXCLUDE_STATUSES = {'complete', 'completed', 'invoiced', 'closed', 'paid', 'collections'}
+    t19 = [j for j in t19_all if (j.get('status') or '').lower() not in EXCLUDE_STATUSES]
 
-    def is_pre_invoice(job):
-        status = (job.get('status') or '').lower()
-        return status not in EXCLUDE_STATUSES
+    print(f"T-19 pre-invoice jobs: {len(t19)}", flush=True)
 
-    t19 = [j for j in t19_all if is_pre_invoice(j)]
+    # Enrich using thread pool for speed
+    import concurrent.futures
 
-    # Enrich
-    for i, job in enumerate(t19):
+    def enrich(job):
         jid = job['job_id']
         try:
-            job['detail'] = client.get_job_detail(jid)
-        except:
-            job['detail'] = {}
-        try:
-            job['financial'] = client.get_financial(jid)
-        except:
-            job['financial'] = {}
-        try:
-            job['notes'] = client.get_notes(jid, limit=20)
-        except:
-            job['notes'] = {}
-        time.sleep(0.2)
+            c = PSAClient()
+            c.login()
+            job['detail'] = c.get_job_detail(jid)
+            job['financial'] = c.get_financial(jid)
+            job['notes'] = c.get_notes(jid, limit=20)
+        except Exception as e:
+            print(f"Enrich error {jid}: {e}", flush=True)
+            job.setdefault('detail', {})
+            job.setdefault('financial', {})
+            job.setdefault('notes', {})
+        return job
 
-    # Post-enrich filter: drop jobs where alt_status indicates invoiced/complete
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as ex:
+        t19 = list(ex.map(enrich, t19))
+
+    # Post-enrich filter
     EXCLUDE_ALT = {'invoiced', 'paid', 'closed', 'collections', 'write off', 'write-off', 'completed'}
-    t19 = [
-        j for j in t19
-        if (j.get('detail', {}).get('alt_status', '') or '').lower() not in EXCLUDE_ALT
-    ]
+    t19 = [j for j in t19 if (j.get('detail', {}).get('alt_status', '') or '').lower() not in EXCLUDE_ALT]
 
     with open(CACHE_FILE, 'w') as f:
         json.dump({'ts': time.time(), 'jobs': t19}, f)
 
+    print(f"Cache written: {len(t19)} jobs", flush=True)
     return t19
 
 # ─────────────────────────────────────────────
